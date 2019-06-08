@@ -11,8 +11,7 @@ from trytond.pool import Pool
 __all__ = ['InventoryLine', ]
 
 
-class InventoryLine:
-    __metaclass__ = PoolMeta
+class InventoryLine(metaclass=PoolMeta):
     __name__ = 'stock.inventory.line'
 
     _states = {

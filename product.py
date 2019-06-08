@@ -7,8 +7,7 @@ from trytond.model import fields
 __all__ = ['Template',]
 
 
-class Template:
-    __metaclass__ = PoolMeta
+class Template(metaclass=PoolMeta):
     __name__ = "product.template"
     count_uom = fields.Many2One('product.uom', 'Count UOM', states={
             'readonly': ~Eval('active'),
