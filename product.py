@@ -9,12 +9,15 @@ __all__ = ['Template',]
 
 class Template(metaclass=PoolMeta):
     __name__ = "product.template"
-    count_uom = fields.Many2One('product.uom', 'Count UOM', states={
+    count_uom = fields.Many2One('product.uom', 'Count UOM',
+        states={
             'readonly': ~Eval('active'),
             'invisible': Not(Equal(Eval('type'), 'goods')),
             },
-        domain=[('category', '=', Eval('default_uom_category'))],
-        depends=['active', 'default_uom_category'])
+        domain=[
+            ('category', '=', Eval('default_uom_category'))
+        ],
+        depends=['active', 'type', 'default_uom_category'])
 
     @classmethod
     def view_attributes(cls):

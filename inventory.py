@@ -22,15 +22,12 @@ class InventoryLine(metaclass=PoolMeta):
     product_uom_category = fields.Function(
         fields.Many2One('product.uom.category', 'Product Uom Category'),
         'on_change_with_product_uom_category')
-
     quantity_show = fields.Function(fields.Float('Quantity',
         digits=(16, Eval('unit_digits', 2)),
-        depends=['quantity']), 'get_quantity_show')
-
+        depends=['unit_digits']), 'get_quantity_show')
     quantity_1 = fields.Float('Qty 1', required=True,
         digits=(16, Eval('unit_1_digits', 2)),
-        states=_states, depends=['unit_1_digits'] + _depends)
-
+        states=_states, depends=['unit_1_digits'])
     uom_1 = fields.Many2One('product.uom', 'Unit 1',
         states={
             'required': Bool(Eval('product')),
@@ -39,20 +36,17 @@ class InventoryLine(metaclass=PoolMeta):
         domain=[
             If(Bool(Eval('product_uom_category')),
                 ('category', '=', Eval('product_uom_category')),
-                ('category', '!=', -1)),
+                ('category', '=', -1)),
             ],
-        depends=['product_uom_category'])
-
+        depends=_depends + ['product', 'product_uom_category'])
     unit_1_digits = fields.Function(fields.Integer('Unit 1 Digits'),
             'get_unit_x_digits')
-
     quantity_2 = fields.Float('Qty 2',
         digits=(16, Eval('unit_2_digits', 2)),
         states={
             'readonly': Eval('inventory_state') != 'draft',
             'required': Bool(Eval('uom_2')),
-        }, depends=['unit_2_digits'] + _depends)
-
+        }, depends=_depends + ['uom_2', 'unit_2_digits'])
     uom_2 = fields.Many2One('product.uom', 'Unit 2',
         states={
             'required': Bool(Eval('quantity_2')),
@@ -61,10 +55,9 @@ class InventoryLine(metaclass=PoolMeta):
         domain=[
             If(Bool(Eval('product_uom_category')),
                 ('category', '=', Eval('product_uom_category')),
-                ('category', '!=', -1)),
+                ('category', '=', -1)),
             ],
-        depends=['product_uom_category'])
-
+        depends=_depends + ['quantity_2', 'product_uom_category'])
     unit_2_digits = fields.Function(fields.Integer('Unit 2 Digits'),
             'get_unit_x_digits')
 
@@ -113,6 +106,8 @@ class InventoryLine(metaclass=PoolMeta):
         for v in vlist:
             default_uom = cls.get_count_uom(
                 v['product'], default_uom=True)
+            if 'quantity' not in v:
+                v['quantity'] = 0.0
             if 'quantity_1' not in v:
                 uom_1 = cls.get_count_uom(v['product'])
                 if default_uom.id == uom_1.id:
@@ -136,23 +131,17 @@ class InventoryLine(metaclass=PoolMeta):
     def on_change_quantity_1(self):
         self.set_quantity()
 
-    @fields.depends('product',
-        'quantity_1', 'uom_1',
-        'quantity_2', 'uom_2')
+    @fields.depends(methods=['on_change_quantity_1'])
     def on_change_quantity_2(self):
-        self.set_quantity()
+        self.on_change_quantity_1()
 
-    @fields.depends('product',
-        'quantity_1', 'uom_1',
-        'quantity_2', 'uom_2')
+    @fields.depends(methods=['on_change_quantity_1'])
     def on_change_uom_1(self):
-        self.set_quantity()
+        self.on_change_quantity_1()
 
-    @fields.depends('product',
-        'quantity_1', 'uom_1',
-        'quantity_2', 'uom_2')
+    @fields.depends(methods=['on_change_quantity_1'])
     def on_change_uom_2(self):
-        self.set_quantity()
+        self.on_change_quantity_1()
 
     @fields.depends('uom')
     def on_change_product(self):
@@ -198,6 +187,7 @@ class InventoryLine(metaclass=PoolMeta):
 
     def get_unit_x_digits(self, name):
         digits = 2
+        uom = None
         if name == 'unit_1_digits':
             uom = self.uom_1
         else:
