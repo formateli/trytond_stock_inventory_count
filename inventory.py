@@ -22,9 +22,6 @@ class InventoryLine(metaclass=PoolMeta):
     product_uom_category = fields.Function(
         fields.Many2One('product.uom.category', 'Product Uom Category'),
         'on_change_with_product_uom_category')
-    quantity_show = fields.Function(fields.Float('Quantity',
-        digits=(16, Eval('unit_digits', 2)),
-        depends=['unit_digits']), 'get_quantity_show')
     quantity_1 = fields.Float('Qty 1', required=True,
         digits=(16, Eval('unit_1_digits', 2)),
         states=_states, depends=['unit_1_digits'])
@@ -62,32 +59,9 @@ class InventoryLine(metaclass=PoolMeta):
             'get_unit_x_digits')
 
     @classmethod
-    def __register__(cls, module_name):
-        transaction = Transaction()
-        cursor = transaction.connection.cursor()
-        sql_table = cls.__table__()
-
-        super(InventoryLine, cls).__register__(module_name)
-
-        select = sql_table.select(
-            sql_table.id, sql_table.product,
-            sql_table.quantity)
-        select.where = (sql_table.quantity_1 == None)
-
-        cursor.execute(*select)
-        has_update = False
-        for id_, product, quantity in cursor.fetchall():
-            uom = cls.get_count_uom(product, default_uom=True)
-            cursor.execute(*sql_table.update(
-                    [sql_table.quantity_1, sql_table.uom_1],
-                    [quantity, uom.id],
-                    where=sql_table.id == id_))
-            has_update = True
-
-        if has_update:
-            cursor.execute(
-                'ALTER TABLE "stock_inventory_line" ' \
-                'ALTER COLUMN "quantity_1" SET NOT NULL')
+    def __setup__(cls):
+        super(InventoryLine, cls).__setup__()
+        cls.quantity.states['readonly'] = True
 
     @staticmethod
     def default_unit_1_digits():
@@ -96,9 +70,6 @@ class InventoryLine(metaclass=PoolMeta):
     @staticmethod
     def default_unit_2_digits():
         return 2
-
-    def get_quantity_show(self, name):
-        return self.quantity
 
     @classmethod
     def create(cls, vlist):
@@ -147,7 +118,6 @@ class InventoryLine(metaclass=PoolMeta):
     def on_change_product(self):
         super(InventoryLine, self).on_change_product()
         self.quantity = None
-        self.quantity_show = None
         self.quantity_1 = None
         self.quantity_2 = None
         self.uom_1 = None
@@ -170,7 +140,6 @@ class InventoryLine(metaclass=PoolMeta):
     def set_quantity(self):
         Uom = Pool().get('product.uom')
         self.quantity = None
-        self.quantity_show = None
         if self.product and self.quantity_1 is not None and self.uom_1:
             self.uom = self.product.default_uom
             self.quantity = Uom.compute_qty(
@@ -182,7 +151,6 @@ class InventoryLine(metaclass=PoolMeta):
                     self.uom_2,
                     self.quantity_2,
                     self.uom)
-            self.quantity_show = self.quantity
             super(InventoryLine, self).on_change_quantity()
 
     def get_unit_x_digits(self, name):
