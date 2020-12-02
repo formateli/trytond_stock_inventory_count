@@ -2,14 +2,10 @@
 <!-- This file is part of Tryton.  The COPYRIGHT file at the top level of
 this repository contains the full copyright notices and license terms. -->
 <data>
-    <xpath expr="/form/field[@name='quantity']" position="after">
-        <label name="quantity_1"/>
+    <xpath expr="/tree/field[@name='expected_quantity']" position="before">
         <field name="quantity_1"/>
-        <label name="uom_1"/>
         <field name="uom_1"/>
-        <label name="quantity_2"/>
         <field name="quantity_2"/>
-        <label name="uom_2"/>
         <field name="uom_2"/>
     </xpath>
 </data>

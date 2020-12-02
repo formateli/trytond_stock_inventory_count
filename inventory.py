@@ -1,14 +1,11 @@
 # This file is part of trytond-stock_inventory_cost module for Tryton.
 # The COPYRIGHT file at the top level of this repository contains
 # the full copyright notices and license terms.
-
 from trytond.pool import PoolMeta
 from trytond.model import fields
 from trytond.pyson import Eval, If, Bool
 from trytond.transaction import Transaction
 from trytond.pool import Pool
-
-__all__ = ['InventoryLine', ]
 
 
 class InventoryLine(metaclass=PoolMeta):
